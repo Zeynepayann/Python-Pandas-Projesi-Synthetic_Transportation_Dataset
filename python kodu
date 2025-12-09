@@ -1,0 +1,140 @@
+import pandas as pd
+import numpy as np 
+import matplotlib.pyplot as plt
+# Dosya yolunu 'r' (Raw String) ile düzelttik
+df = pd.read_csv(r'C:\Users\Lenovo\Downloads\Synthetic_Transportation_Dataset_Expanded_v2.csv')
+
+# İlk 5 satırı göster
+print("DataFrame'in İlk 5 Satırı:")
+print(df.head())
+
+# Sütun tiplerini ve eksik değerleri göster
+print("\nDataFrame Bilgileri:")
+print(df.info())
+
+
+# --- 1. 'Timestamp' sütununu datetime formatına dönüştürme ---
+# Dtype bilgisinde 'object' olarak görünüyor.
+df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
+
+# --- 2. Kaza Şiddeti verilerini temizleme ---
+# 'Accident_Severity' sütunundaki '-' değerlerini, "Kaza Yok" anlamına gelen 'None' ile değiştirelim.
+# Bu, sadece kaza olan verilerle çalışırken veya bir kaza şiddeti modeli oluştururken önemlidir.
+df['Accident_Severity'] = df['Accident_Severity'].replace('-', 'None')
+
+# --- 3. Kategorik Sütunları İnceleme ---
+# Anahtar kategorik sütunlardaki benzersiz değerleri sayalım.
+
+print("\n--- Kategorik Sütunların Benzersiz Değerleri (Toplu Bakış) ---")
+print(f"Vehicle_Type: {df['Vehicle_Type'].nunique()} adet - {df['Vehicle_Type'].unique()}")
+print(f"Traffic_Density: {df['Traffic_Density'].nunique()} adet - {df['Traffic_Density'].unique()}")
+print(f"Weather: {df['Weather'].nunique()} adet - {df['Weather'].unique()}")
+print(f"Road_Condition: {df['Road_Condition'].nunique()} adet - {df['Road_Condition'].unique()}")
+print(f"Accident_Severity: {df['Accident_Severity'].nunique()} adet - {df['Accident_Severity'].unique()}")
+print(f"Alert_Generated: {df['Alert_Generated'].nunique()} adet - {df['Alert_Generated'].unique()}")
+
+# Değişiklikleri kontrol etmek için DataFrame'in yeni bilgilerine bakalım
+print("\n--- Güncellenmiş DataFrame Bilgileri ---")
+print(df.info())
+
+
+# Veriyi tekrar yükle ve ön işleme adımlarını uygula
+df = pd.read_csv(r'C:\Users\Lenovo\Downloads\Synthetic_Transportation_Dataset_Expanded_v2.csv')
+df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
+df['Accident_Severity'] = df['Accident_Severity'].replace('-', 'None')
+
+# --- 1. Yeni bir ikili kaza sütunu oluşturma ---
+# Kaza olup olmadığını sayısal olarak ifade edelim (1=Evet, 0=Hayır)
+df['Is_Accident'] = df['Accident_Occurred'].apply(lambda x: 1 if x == 'Yes' else 0)
+
+# --- 2. Trafik Yoğunluğuna göre kaza sayısını analiz etme ---
+# Her bir trafik yoğunluğu seviyesindeki toplam kaza sayısını bulalım.
+traffic_accident_counts = df.groupby('Traffic_Density')['Is_Accident'].sum().sort_values(ascending=False)
+
+print("\n--- Trafik Yoğunluğuna Göre Toplam Kaza Sayısı ---")
+print(traffic_accident_counts)
+
+# --- 3. Görselleştirme: Trafik Yoğunluğuna Göre Kaza Sayısı (Bar Plot) ---
+plt.figure(figsize=(8, 6))
+# Trafik yoğunluğu sırasını mantıksal olarak Low'dan Very High'a sıralayalım
+order = ['Low', 'Medium', 'High', 'Very High']
+traffic_accident_counts.loc[order].plot(kind='bar', color=['lightgray', 'gold', 'darkorange', 'red'])
+
+plt.title('Trafik Yoğunluğuna Göre Toplam Kaza Sayısı')
+plt.xlabel('Trafik Yoğunluğu')
+plt.ylabel('Toplam Kaza Sayısı')
+plt.xticks(rotation=0)
+plt.grid(axis='y', linestyle='--')
+plt.tight_layout()
+plt.savefig('traffic_density_accident_count.png')
+plt.close()
+
+
+# Veriyi tekrar yükle ve ön işleme adımlarını uygula
+
+df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
+df['Accident_Severity'] = df['Accident_Severity'].replace('-', 'None')
+df['Is_Accident'] = df['Accident_Occurred'].apply(lambda x: 1 if x == 'Yes' else 0)
+
+# Sadece kaza olan kayıtları filtreleyelim
+df_kazali = df[df['Is_Accident'] == 1].copy()
+
+# --- 1. Kaza Şiddeti Analizi (Mutlak Sayı) ---
+severity_counts = df_kazali['Accident_Severity'].value_counts()
+print("\n--- Kaza Şiddetine Göre Mutlak Dağılım ---")
+print(severity_counts)
+
+# --- 2. Araç Tipine Göre Kaza Oranı Analizi ---
+vehicle_accident_counts = df_kazali.groupby('Vehicle_Type')['Is_Accident'].sum()
+total_by_vehicle = df.groupby('Vehicle_Type')['Record_ID'].count()
+vehicle_accident_rate = (vehicle_accident_counts / total_by_vehicle * 100).sort_values(ascending=False)
+print("\n--- Araç Tipine Göre Kaza Oranı (%) ---")
+print(vehicle_accident_rate)
+
+# --- 3. Görselleştirme: Kaza Şiddetine Göre Dağılım (Bar Plot) ---
+plt.figure(figsize=(9, 6))
+# 'None' kategorisini hariç tutuyoruz, çünkü kaza olmayan durumu temsil ediyor.
+severity_counts_plot = severity_counts.drop(labels=['None'], errors='ignore')
+severity_counts_plot.plot(kind='bar', color=['darkred', 'red', 'orange'])
+
+plt.title('Kaza Şiddetine Göre Mutlak Dağılım')
+plt.xlabel('Kaza Şiddeti')
+plt.ylabel('Kaza Sayısı')
+plt.xticks(rotation=0)
+plt.grid(axis='y', linestyle='--')
+plt.tight_layout()
+plt.savefig('accident_severity_count.png')
+plt.close()
+
+
+df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
+df['Accident_Severity'] = df['Accident_Severity'].replace('-', 'None')
+df['Is_Accident'] = df['Accident_Occurred'].apply(lambda x: 1 if x == 'Yes' else 0)
+
+# --- 1. Yol Durumuna göre Kaza Oranını hesaplama ---
+road_accident_counts = df.groupby('Road_Condition')['Is_Accident'].sum()
+total_by_road = df.groupby('Road_Condition')['Record_ID'].count()
+
+# Kaza Oranını hesaplayın: (Kaza Sayısı / Toplam Kayıt)
+road_accident_rate = (road_accident_counts / total_by_road * 100).sort_values(ascending=False)
+
+print("\n--- Yol Durumuna Göre Kaza Oranı (%) ---")
+print(road_accident_rate)
+
+# --- 2. Görselleştirme: Yol Durumuna Göre Kaza Oranı (Bar Plot) ---
+plt.figure(figsize=(10, 6))
+# Sıralamayı mantıksal olarak Dry'dan Under Maintenance/Wet/Slippery'ye yapalım.
+order = ['Dry', 'Wet', 'Slippery', 'Under Maintenance']
+road_accident_rate_ordered = road_accident_rate.loc[order]
+mean_rate = road_accident_rate.mean()
+colors = ['lightgray' if rate < mean_rate else 'darkred' for rate in road_accident_rate_ordered]
+
+road_accident_rate_ordered.plot(kind='bar', color=colors)
+plt.title('Yol Durumuna Göre Kaza Oranı (Risk)')
+plt.xlabel('Yol Durumu')
+plt.ylabel('Kaza Oranı (%)')
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', linestyle='--')
+plt.tight_layout()
+plt.savefig('road_condition_accident_rate.png')
+plt.close()
