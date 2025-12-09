@@ -1,7 +1,7 @@
 import pandas as pd
-import numpy as np 
 import matplotlib.pyplot as plt
-# Dosya yolunu 'r' (Raw String) ile düzelttik
+
+
 df = pd.read_csv(r'C:\Users\Lenovo\Downloads\Synthetic_Transportation_Dataset_Expanded_v2.csv')
 
 # İlk 5 satırı göster
@@ -13,7 +13,7 @@ print("\nDataFrame Bilgileri:")
 print(df.info())
 
 
-# --- 1. 'Timestamp' sütununu datetime formatına dönüştürme ---
+# 'Timestamp' sütununu datetime formatına dönüştürüyoruz
 # Dtype bilgisinde 'object' olarak görünüyor.
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
 
@@ -38,10 +38,7 @@ print("\n--- Güncellenmiş DataFrame Bilgileri ---")
 print(df.info())
 
 
-# Veriyi tekrar yükle ve ön işleme adımlarını uygula
-df = pd.read_csv(r'C:\Users\Lenovo\Downloads\Synthetic_Transportation_Dataset_Expanded_v2.csv')
-df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
-df['Accident_Severity'] = df['Accident_Severity'].replace('-', 'None')
+
 
 # --- 1. Yeni bir ikili kaza sütunu oluşturma ---
 # Kaza olup olmadığını sayısal olarak ifade edelim (1=Evet, 0=Hayır)
@@ -70,7 +67,7 @@ plt.savefig('traffic_density_accident_count.png')
 plt.close()
 
 
-# Veriyi tekrar yükle ve ön işleme adımlarını uygula
+
 
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%d-%m-%Y %H:%M')
 df['Accident_Severity'] = df['Accident_Severity'].replace('-', 'None')
@@ -79,19 +76,19 @@ df['Is_Accident'] = df['Accident_Occurred'].apply(lambda x: 1 if x == 'Yes' else
 # Sadece kaza olan kayıtları filtreleyelim
 df_kazali = df[df['Is_Accident'] == 1].copy()
 
-# --- 1. Kaza Şiddeti Analizi (Mutlak Sayı) ---
+#  1. Kaza Şiddeti Analizi (Mutlak Sayı)
 severity_counts = df_kazali['Accident_Severity'].value_counts()
 print("\n--- Kaza Şiddetine Göre Mutlak Dağılım ---")
 print(severity_counts)
 
-# --- 2. Araç Tipine Göre Kaza Oranı Analizi ---
+#  2. Araç Tipine Göre Kaza Oranı Analizi 
 vehicle_accident_counts = df_kazali.groupby('Vehicle_Type')['Is_Accident'].sum()
 total_by_vehicle = df.groupby('Vehicle_Type')['Record_ID'].count()
 vehicle_accident_rate = (vehicle_accident_counts / total_by_vehicle * 100).sort_values(ascending=False)
 print("\n--- Araç Tipine Göre Kaza Oranı (%) ---")
 print(vehicle_accident_rate)
 
-# --- 3. Görselleştirme: Kaza Şiddetine Göre Dağılım (Bar Plot) ---
+#  3. Görselleştirme: Kaza Şiddetine Göre Dağılım 
 plt.figure(figsize=(9, 6))
 # 'None' kategorisini hariç tutuyoruz, çünkü kaza olmayan durumu temsil ediyor.
 severity_counts_plot = severity_counts.drop(labels=['None'], errors='ignore')
@@ -115,15 +112,15 @@ df['Is_Accident'] = df['Accident_Occurred'].apply(lambda x: 1 if x == 'Yes' else
 road_accident_counts = df.groupby('Road_Condition')['Is_Accident'].sum()
 total_by_road = df.groupby('Road_Condition')['Record_ID'].count()
 
-# Kaza Oranını hesaplayın: (Kaza Sayısı / Toplam Kayıt)
+# Kaza Oranını hesaplama: (Kaza Sayısı / Toplam Kayıt)
 road_accident_rate = (road_accident_counts / total_by_road * 100).sort_values(ascending=False)
 
 print("\n--- Yol Durumuna Göre Kaza Oranı (%) ---")
 print(road_accident_rate)
 
-# --- 2. Görselleştirme: Yol Durumuna Göre Kaza Oranı (Bar Plot) ---
+# --- 2. Görselleştirme: Yol Durumuna Göre Kaza Oranı 
 plt.figure(figsize=(10, 6))
-# Sıralamayı mantıksal olarak Dry'dan Under Maintenance/Wet/Slippery'ye yapalım.
+# Sıralamayı Dry'dan Under Maintenance/Wet/Slippery'ye yapalım.
 order = ['Dry', 'Wet', 'Slippery', 'Under Maintenance']
 road_accident_rate_ordered = road_accident_rate.loc[order]
 mean_rate = road_accident_rate.mean()
